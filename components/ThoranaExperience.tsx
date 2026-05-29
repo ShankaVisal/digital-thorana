@@ -51,6 +51,7 @@ export function ThoranaExperience() {
   const [audioDebugEnabled, setAudioDebugEnabled] = useState(false);
   const [lastAudioError, setLastAudioError] = useState<string | null>(null);
   const [lastAudioAction, setLastAudioAction] = useState<string | null>(null);
+  const suppressNextSceneEffectRef = useRef(false);
 
   const currentSceneData = nandivisalaScenes[currentScene];
   const totalScenes = nandivisalaScenes.length;
@@ -361,57 +362,70 @@ export function ThoranaExperience() {
   };
 
   const handleStart = () => {
-    // Ensure iOS AudioContext is initialized on an explicit user gesture
-    if (isIOS) {
-      void (async () => {
-        try {
-          const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
-          if (AudioCtx && !audioContextRef.current) {
-            const ctx = new AudioCtx();
-            audioContextRef.current = ctx;
-            await ctx.resume();
-
-            // Start background buffer playback
-            try {
-              const url = "/audio/background-vesak.mp3";
-              let buffer = audioBufferCache.current.get(url);
-              if (!buffer) {
-                const res = await fetch(url);
-                const ab = await res.arrayBuffer();
-                buffer = (await ctx.decodeAudioData(ab.slice(0))) as AudioBuffer;
-                audioBufferCache.current.set(url, buffer);
-              }
-
-              const bgGain = ctx.createGain();
-              // use slightly higher background level on mobile so it's audible
-              bgGain.gain.value = isMobile ? 0.12 : 0.05;
-              backgroundGainRef.current = bgGain;
-
-              const src = ctx.createBufferSource();
-              src.buffer = buffer;
-              src.loop = true;
-              src.connect(bgGain).connect(ctx.destination);
-              src.start();
-              bgSourceRef.current = src;
-            } catch (e) {
-              // fallback to element playback
-              try {
-                backgroundAudioRef.current?.play().catch(() => {});
-              } catch (e) {}
-            }
-          } else if (audioContextRef.current) {
-            void audioContextRef.current.resume().catch(() => {});
+    void (async () => {
+      try {
+        if (isIOS) {
+          const ctx = await ensureAudioContext();
+          if (!ctx) {
+            throw new Error("AudioContext unavailable");
           }
-        } catch (e) {
-          // ignore audio init errors
-        }
-      })();
-    }
 
-    setIsStarted(true);
-    setIsAutoPlaying(true);
-    setShowMoralSection(false);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+          // Stop any stray element-based playback on iOS so only the shared audio graph is active.
+          try {
+            backgroundAudioRef.current?.pause();
+            if (backgroundAudioRef.current) {
+              backgroundAudioRef.current.currentTime = 0;
+            }
+          } catch (e) {}
+
+          // Start or refresh the shared background buffer.
+          try {
+            const url = "/audio/background-vesak.mp3";
+            let buffer = audioBufferCache.current.get(url);
+            if (!buffer) {
+              const res = await fetch(url);
+              const ab = await res.arrayBuffer();
+              buffer = (await ctx.decodeAudioData(ab.slice(0))) as AudioBuffer;
+              audioBufferCache.current.set(url, buffer);
+            }
+
+            const bgGain = ctx.createGain();
+            bgGain.gain.value = isMobile ? 0.12 : 0.05;
+            backgroundGainRef.current = bgGain;
+
+            try {
+              bgSourceRef.current?.stop();
+            } catch (e) {}
+
+            const src = ctx.createBufferSource();
+            src.buffer = buffer;
+            src.loop = true;
+            src.connect(bgGain).connect(ctx.destination);
+            src.start();
+            bgSourceRef.current = src;
+          } catch (e) {
+            setLastAudioError(String((e as any)?.message ?? e));
+          }
+        }
+
+        setIsStarted(true);
+        setIsAutoPlaying(true);
+        setShowMoralSection(false);
+        suppressNextSceneEffectRef.current = true;
+        window.scrollTo({ top: 0, behavior: "smooth" });
+
+        // Explicitly kick off the first narration after audio is initialized.
+        if (isNarrationEnabled && !isMuted) {
+          playSceneAudio(0);
+        }
+      } catch (e) {
+        setLastAudioError(String((e as any)?.message ?? e));
+        setIsStarted(true);
+        setIsAutoPlaying(true);
+        setShowMoralSection(false);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    })();
   };
 
   useEffect(() => {
@@ -482,6 +496,11 @@ export function ThoranaExperience() {
 
   useEffect(() => {
     if (!isStarted) {
+      return;
+    }
+
+    if (suppressNextSceneEffectRef.current) {
+      suppressNextSceneEffectRef.current = false;
       return;
     }
 
