@@ -53,16 +53,16 @@ export function SceneNavigation({
       </div>
 
       <div className="flex justify-center">
-        <div className="grid gap-2 grid-cols-1 sm:grid-cols-3 xl:grid-cols-3">
-          <Button variant="outline" onClick={onPrev} disabled={currentScene === 0} className="min-w-[140px] justify-center">
+        <div className="grid w-full gap-2 grid-cols-1 sm:grid-cols-3 xl:grid-cols-3">
+          <Button variant="outline" onClick={onPrev} disabled={currentScene === 0} className="min-w-0 justify-center px-4 sm:min-w-[140px]">
             <ArrowLeft className="h-4 w-4" />
             Previous
           </Button>
-          <Button variant="outline" onClick={onNext} disabled={currentScene >= totalScenes - 1} className="min-w-[140px] justify-center">
+          <Button variant="outline" onClick={onNext} disabled={currentScene >= totalScenes - 1} className="min-w-0 justify-center px-4 sm:min-w-[140px]">
             Next
             <ArrowRight className="h-4 w-4" />
           </Button>
-          <Button variant="soft" onClick={onRestart} className="min-w-[140px] justify-center">
+          <Button variant="soft" onClick={onRestart} className="min-w-0 justify-center px-4 sm:min-w-[140px]">
             <RotateCcw className="h-4 w-4" />
             Restart Story
           </Button>

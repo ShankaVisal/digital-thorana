@@ -49,7 +49,7 @@ export function ShareButtons({ shareUrl, shareMessage, onShared }: ShareButtonsP
         <Share2 className="h-4 w-4 text-amber-200" />
         Share the thorana
       </div>
-      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-2 grid-cols-2 xl:grid-cols-4">
         <Button variant="gold" onClick={handleShare} className="w-full justify-center">
           <Share2 className="h-4 w-4" />
           Share

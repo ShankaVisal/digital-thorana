@@ -686,18 +686,18 @@ export function ThoranaExperience() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.5 }}
-              className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-6 px-4 py-5 md:px-6 md:py-8 lg:px-8"
+              className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-4 px-3 py-4 sm:px-4 sm:py-5 md:px-6 md:py-8 lg:px-8"
             >
-              <div className="space-y-6">
+              <div className="space-y-5">
                 <div className="space-y-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.4rem] border border-white/8 bg-white/5 px-4 py-3 backdrop-blur-xl md:px-5">
+                  <div className="flex flex-col gap-3 rounded-[1.4rem] border border-white/8 bg-white/5 px-4 py-4 text-center backdrop-blur-xl sm:text-left md:flex-row md:items-center md:justify-between md:px-5">
                     <div>
-                      <div className="text-xs uppercase tracking-[0.35em] text-amber-100/55">Digital Vesak Thorana</div>
-                      <h1 className="mt-1 font-serif text-2xl text-amber-50 md:text-4xl">{storyMeta.pageTitle}</h1>
+                      <div className="text-[0.65rem] uppercase tracking-[0.32em] text-amber-100/55 sm:text-xs">Digital Vesak Thorana</div>
+                      <h1 className="mt-1 font-serif text-[1.5rem] leading-tight text-amber-50 sm:text-2xl md:text-4xl">{storyMeta.pageTitle}</h1>
                     </div>
-                    <div className="text-right text-sm text-white/72">
+                    <div className="text-sm text-white/72 md:text-right">
                       <div className="font-medium text-amber-50">{storyMeta.storyTitle}</div>
-                      <div>{storyMeta.tagline}</div>
+                      <div className="mt-1 text-xs sm:text-sm">{storyMeta.tagline}</div>
                     </div>
                   </div>
 
@@ -729,7 +729,7 @@ export function ThoranaExperience() {
                 </div>
               </div>
 
-              <div className="grid gap-6">
+              <div className="grid gap-5">
                 {showMoralSection && (
                   <MoralSection
                     moralSinhala={storyMeta.moralSinhala}
@@ -743,7 +743,7 @@ export function ThoranaExperience() {
                 )}
 
                 <TaproBranding onVisitTapro={handleVisitTapro} />
-                <div className="mt-3 rounded-2xl border border-white/8 bg-white/5 p-4 text-sm text-white/72">
+                <div className="mt-2 rounded-2xl border border-white/8 bg-white/5 p-4 text-sm text-white/72">
                   <div className="font-medium text-white">Designed and Implemented by Shanka Visal</div>
                   <div className="mt-1">Voice by Tharushi Wijethunga</div>
                 </div>
