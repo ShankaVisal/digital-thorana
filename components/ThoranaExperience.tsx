@@ -218,7 +218,8 @@ export function ThoranaExperience() {
       audio.volume = 1.0;
       if (backgroundAudioRef.current) {
         try {
-          backgroundAudioRef.current.volume = isStarted ? 0.02 : 0.08;
+          // make background audible but reduced on mobile (was too low for some devices)
+          backgroundAudioRef.current.volume = isStarted ? 0.12 : 0.08;
         } catch (e) {
           // ignore
         }
@@ -299,6 +300,53 @@ export function ThoranaExperience() {
   };
 
   const handleStart = () => {
+    // Ensure iOS AudioContext is initialized on an explicit user gesture
+    if (isIOS) {
+      void (async () => {
+        try {
+          const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+          if (AudioCtx && !audioContextRef.current) {
+            const ctx = new AudioCtx();
+            audioContextRef.current = ctx;
+            await ctx.resume();
+
+            // Start background buffer playback
+            try {
+              const url = "/audio/background-vesak.mp3";
+              let buffer = audioBufferCache.current.get(url);
+              if (!buffer) {
+                const res = await fetch(url);
+                const ab = await res.arrayBuffer();
+                buffer = (await ctx.decodeAudioData(ab.slice(0))) as AudioBuffer;
+                audioBufferCache.current.set(url, buffer);
+              }
+
+              const bgGain = ctx.createGain();
+              // use slightly higher background level on mobile so it's audible
+              bgGain.gain.value = isMobile ? 0.12 : 0.05;
+              backgroundGainRef.current = bgGain;
+
+              const src = ctx.createBufferSource();
+              src.buffer = buffer;
+              src.loop = true;
+              src.connect(bgGain).connect(ctx.destination);
+              src.start();
+              bgSourceRef.current = src;
+            } catch (e) {
+              // fallback to element playback
+              try {
+                backgroundAudioRef.current?.play().catch(() => {});
+              } catch (e) {}
+            }
+          } else if (audioContextRef.current) {
+            void audioContextRef.current.resume().catch(() => {});
+          }
+        } catch (e) {
+          // ignore audio init errors
+        }
+      })();
+    }
+
     setIsStarted(true);
     setIsAutoPlaying(true);
     setShowMoralSection(false);
@@ -329,7 +377,8 @@ export function ThoranaExperience() {
 
       // create background gain and play background buffer
       const bgGain = ctx.createGain();
-      bgGain.gain.value = isStarted ? (isMobile ? 0.03 : 0.05) : (isMobile ? 0.12 : 0.22);
+      // set background gain: higher on mobile so it's audible, lowered when started
+      bgGain.gain.value = isStarted ? (isMobile ? 0.12 : 0.05) : 0.22;
       backgroundGainRef.current = bgGain;
 
       try {
