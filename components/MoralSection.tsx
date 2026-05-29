@@ -27,9 +27,6 @@ export function MoralSection({
   return (
     <Card className="overflow-hidden border-amber-100/15 bg-gradient-to-b from-white/8 to-white/4">
       <CardHeader className="space-y-3 text-center">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-amber-100/20 bg-amber-100/12 text-amber-100 shadow-[0_0_30px_rgba(248,211,122,0.2)]">
-          <Sparkles className="h-7 w-7" />
-        </div>
         <CardTitle className="font-serif text-2xl text-amber-50 md:text-4xl">ධර්ම පාඩම | Moral of the Story</CardTitle>
         <CardDescription className="mx-auto max-w-3xl text-white/76 md:text-base">{moralEnglish}</CardDescription>
       </CardHeader>

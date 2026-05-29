@@ -13,9 +13,11 @@ type StorySceneProps = {
   scene: StorySceneType;
   totalScenes: number;
   className?: string;
+  onPrev?: () => void;
+  onNext?: () => void;
 };
 
-export function StoryScene({ scene, totalScenes, className }: StorySceneProps) {
+export function StoryScene({ scene, totalScenes, className, onPrev, onNext }: StorySceneProps) {
   const reduceMotion = useReducedMotion();
 
   return (
@@ -56,6 +58,34 @@ export function StoryScene({ scene, totalScenes, className }: StorySceneProps) {
               <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(4,10,18,0.2)_45%,rgba(4,10,18,0.7)_100%)]" />
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(255,243,201,0.12),_transparent_58%)]" />
             </div>
+            {/* Mobile-only prev/next between image and text */}
+            {(onPrev || onNext) && (
+              <div className="mt-4 flex items-center justify-center gap-8 -translate-y-2">
+                {onPrev && (
+                  <button
+                    onClick={onPrev}
+                    aria-label="Previous scene"
+                    className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100/12 text-amber-100/95 shadow-[0_8px_30px_rgba(255,174,66,0.18)] ring-1 ring-amber-200/20 transition-transform duration-200 hover:scale-105 hover:bg-amber-200/20"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                )}
+
+                {onNext && (
+                  <button
+                    onClick={onNext}
+                    aria-label="Next scene"
+                    className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100/12 text-amber-100/95 shadow-[0_8px_30px_rgba(255,174,66,0.18)] ring-1 ring-amber-200/20 transition-transform duration-200 hover:scale-105 hover:bg-amber-200/20"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            )}
           </motion.div>
         </AnimatePresence>
 

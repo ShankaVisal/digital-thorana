@@ -352,21 +352,27 @@ export function ThoranaExperience() {
                     </div>
                   </div>
 
-                  <ThoranaFrame>
-                    <StoryScene scene={currentSceneData} totalScenes={totalScenes} />
-                  </ThoranaFrame>
+                  <div className="relative">
+                    <ThoranaFrame>
+                      <StoryScene scene={currentSceneData} totalScenes={totalScenes} onPrev={handlePrev} onNext={handleNext} />
+                    </ThoranaFrame>
 
-                  <SceneNavigation
-                    currentScene={currentScene}
-                    totalScenes={totalScenes}
-                    progress={progress}
-                    isAutoPlaying={isAutoPlaying}
-                    onPrev={handlePrev}
-                    onNext={handleNext}
-                    onGoToScene={handleGoToScene}
-                    onRestart={handleRestart}
-                    onToggleAutoPlay={() => setIsAutoPlaying((value) => !value)}
-                  />
+                    {/* mobile prev/next are rendered inside StoryScene between image and text */}
+                  </div>
+
+                  <div className="hidden md:block">
+                    <SceneNavigation
+                      currentScene={currentScene}
+                      totalScenes={totalScenes}
+                      progress={progress}
+                      isAutoPlaying={isAutoPlaying}
+                      onPrev={handlePrev}
+                      onNext={handleNext}
+                      onGoToScene={handleGoToScene}
+                      onRestart={handleRestart}
+                      onToggleAutoPlay={() => setIsAutoPlaying((value) => !value)}
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-4">

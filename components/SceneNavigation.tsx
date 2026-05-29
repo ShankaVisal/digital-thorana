@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, ArrowRight, PauseCircle, PlayCircle, RotateCcw } from "lucide-react";
+import { ArrowLeft, ArrowRight, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -52,24 +52,21 @@ export function SceneNavigation({
         ))}
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
-        <Button variant="outline" onClick={onPrev} disabled={currentScene === 0} className="w-full justify-center">
-          <ArrowLeft className="h-4 w-4" />
-          Previous
-        </Button>
-        <Button variant="gold" onClick={onToggleAutoPlay} className="w-full justify-center">
-          {isAutoPlaying ? <PauseCircle className="h-4 w-4" /> : <PlayCircle className="h-4 w-4" />}
-          {isAutoPlaying ? "Pause" : "Auto Play Story"}
-        </Button>
-        <Button variant="outline" onClick={onNext} disabled={currentScene >= totalScenes - 1} className="w-full justify-center">
-          Next
-          <ArrowRight className="h-4 w-4" />
-        </Button>
-        <Button variant="soft" onClick={onRestart} className="w-full justify-center">
-          <RotateCcw className="h-4 w-4" />
-          Restart Story
-        </Button>
-        <div className="hidden xl:block" />
+      <div className="flex justify-center">
+        <div className="grid gap-2 grid-cols-1 sm:grid-cols-3 xl:grid-cols-3">
+          <Button variant="outline" onClick={onPrev} disabled={currentScene === 0} className="min-w-[140px] justify-center">
+            <ArrowLeft className="h-4 w-4" />
+            Previous
+          </Button>
+          <Button variant="outline" onClick={onNext} disabled={currentScene >= totalScenes - 1} className="min-w-[140px] justify-center">
+            Next
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+          <Button variant="soft" onClick={onRestart} className="min-w-[140px] justify-center">
+            <RotateCcw className="h-4 w-4" />
+            Restart Story
+          </Button>
+        </div>
       </div>
     </div>
   );
