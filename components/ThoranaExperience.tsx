@@ -48,6 +48,7 @@ export function ThoranaExperience() {
   const audioBufferCache = useRef<Map<string, AudioBuffer>>(new Map());
   const [isIOS, setIsIOS] = useState(false);
   const isAutoPlayingRef = useRef(false);
+  const [audioDebugEnabled, setAudioDebugEnabled] = useState(false);
 
   const currentSceneData = nandivisalaScenes[currentScene];
   const totalScenes = nandivisalaScenes.length;
@@ -62,9 +63,52 @@ export function ThoranaExperience() {
       setIsIOS(/iP(hone|od|ad)/i.test(ua) || (/Macintosh/i.test(ua) && 'ontouchend' in document));
       const onResize = () => setIsMobile(window.innerWidth <= 767 || uaMobile);
       window.addEventListener("resize", onResize);
+      try {
+        const params = new URLSearchParams(window.location.search);
+        setAudioDebugEnabled(params.get("audioDebug") === "1");
+      } catch (e) {}
       return () => window.removeEventListener("resize", onResize);
     }
   }, []);
+
+  // helpers for debugging / diagnostics and manual triggers
+  const ensureAudioContext = async () => {
+    if (typeof window === "undefined") return null;
+    const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return null;
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioCtx();
+      try {
+        await audioContextRef.current!.resume();
+      } catch (e) {}
+    } else {
+      try {
+        await audioContextRef.current!.resume();
+      } catch (e) {}
+    }
+    return audioContextRef.current;
+  };
+
+  const playBufferUrl = async (url: string, loop = false, gainValue?: number) => {
+    const ctx = await ensureAudioContext();
+    if (!ctx) throw new Error("No AudioContext available");
+    let buffer = audioBufferCache.current.get(url);
+    if (!buffer) {
+      const res = await fetch(url);
+      const ab = await res.arrayBuffer();
+      buffer = (await ctx.decodeAudioData(ab.slice(0))) as AudioBuffer;
+      audioBufferCache.current.set(url, buffer);
+    }
+
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    src.loop = loop;
+    const gain = ctx.createGain();
+    if (typeof gainValue === "number") gain.gain.value = gainValue;
+    src.connect(gain).connect(ctx.destination);
+    src.start();
+    return { ctx, src, gain } as const;
+  };
 
   useEffect(() => {
     isAutoPlayingRef.current = isAutoPlaying;
@@ -496,6 +540,59 @@ export function ThoranaExperience() {
       />
 
       <div className="relative z-10">
+        {audioDebugEnabled && (
+          <div className="fixed right-4 top-4 z-50 w-72 rounded-lg border border-white/10 bg-black/60 p-3 text-sm text-white">
+            <div className="mb-2 font-medium">Audio Debug</div>
+            <div className="mb-2">
+              <div>isIOS: {String(isIOS)}</div>
+              <div>isMobile: {String(isMobile)}</div>
+              <div>AudioContext: {audioContextRef.current ? "ready" : "null"}</div>
+              <div>BG buffer: {bgSourceRef.current ? "loaded" : "null"}</div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={async () => {
+                  try {
+                    await ensureAudioContext();
+                    console.log("AudioContext ready", audioContextRef.current);
+                  } catch (e) {
+                    console.error(e);
+                  }
+                }}
+                className="rounded bg-amber-100/12 px-3 py-1 text-amber-100"
+              >
+                Init AudioContext
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await playBufferUrl("/audio/background-vesak.mp3", true, isMobile ? 0.12 : 0.05);
+                    console.log("Played BG buffer");
+                  } catch (e) {
+                    console.error(e);
+                  }
+                }}
+                className="rounded bg-amber-100/12 px-3 py-1 text-amber-100"
+              >
+                Play BG Buffer
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    const sceneUrl = nandivisalaScenes[currentScene]?.audioSrc ?? "/audio/scene-1.mp3";
+                    await playBufferUrl(sceneUrl, false, 1.0);
+                    console.log("Played narration buffer");
+                  } catch (e) {
+                    console.error(e);
+                  }
+                }}
+                className="rounded bg-amber-100/12 px-3 py-1 text-amber-100"
+              >
+                Play Narration Buffer
+              </button>
+            </div>
+          </div>
+        )}
         <AnimatePresence mode="wait">
           {!isStarted ? (
             <motion.div key="intro">
