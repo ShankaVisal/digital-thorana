@@ -331,6 +331,10 @@ export function ThoranaExperience() {
                 )}
 
                 <TaproBranding onVisitTapro={handleVisitTapro} />
+                <div className="mt-3 rounded-2xl border border-white/8 bg-white/5 p-4 text-sm text-white/72">
+                  <div className="font-medium text-white">Designed and Implemented by Shanka Visal</div>
+                  <div className="mt-1">Voice by Tharushi Wijethunga</div>
+                </div>
               </div>
             </motion.div>
           )}
