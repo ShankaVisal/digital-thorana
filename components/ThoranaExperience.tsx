@@ -43,6 +43,7 @@ export function ThoranaExperience() {
   const backgroundPrevVolumeRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const backgroundGainRef = useRef<GainNode | null>(null);
+  const narrationGainRef = useRef<GainNode | null>(null);
   const bgSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const narrationSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const audioBufferCache = useRef<Map<string, AudioBuffer>>(new Map());
@@ -216,14 +217,21 @@ export function ThoranaExperience() {
           // ensure background gain exists and is connected
           if (!backgroundGainRef.current) {
             const bgGain = ctx.createGain();
-            bgGain.gain.value = isStarted ? (isMobile ? 0.03 : 0.05) : (isMobile ? 0.12 : 0.22);
+            bgGain.gain.value = isStarted ? (isMobile ? 0.035 : 0.05) : (isMobile ? 0.12 : 0.22);
             bgGain.connect(ctx.destination);
             backgroundGainRef.current = bgGain;
           }
 
+          if (!narrationGainRef.current) {
+            const voiceGain = ctx.createGain();
+            voiceGain.gain.value = isMobile ? 1.55 : 1.15;
+            voiceGain.connect(ctx.destination);
+            narrationGainRef.current = voiceGain;
+          }
+
           // duck background
           try {
-            backgroundGainRef.current.gain.value = isMobile ? 0.02 : 0.02;
+            backgroundGainRef.current.gain.value = isMobile ? 0.016 : 0.02;
           } catch (e) {}
 
           // create an HTMLAudioElement and route it through the AudioContext
@@ -232,10 +240,10 @@ export function ThoranaExperience() {
           el.crossOrigin = "anonymous";
           (el as any).playsInline = true;
 
-          // create media source and connect to background gain (so it shares routing)
+          // create media source and connect narration to its own gain
           try {
             const mediaSrc = ctx.createMediaElementSource(el);
-            mediaSrc.connect(backgroundGainRef.current ?? ctx.destination);
+            mediaSrc.connect(narrationGainRef.current ?? ctx.destination);
           } catch (e) {
             // Some browsers restrict createMediaElementSource; fall back to direct connect
             // (the element will still play through system output)
@@ -246,7 +254,7 @@ export function ThoranaExperience() {
 
           el.onended = () => {
             try {
-              if (backgroundGainRef.current) backgroundGainRef.current.gain.value = isStarted ? (isMobile ? 0.03 : 0.05) : (isMobile ? 0.12 : 0.22);
+              if (backgroundGainRef.current) backgroundGainRef.current.gain.value = isStarted ? (isMobile ? 0.035 : 0.05) : (isMobile ? 0.12 : 0.22);
             } catch (e) {}
 
             if (sceneIndex === totalScenes - 1) {
@@ -390,7 +398,7 @@ export function ThoranaExperience() {
             }
 
             const bgGain = ctx.createGain();
-            bgGain.gain.value = isMobile ? 0.12 : 0.05;
+            bgGain.gain.value = isMobile ? 0.035 : 0.05;
             backgroundGainRef.current = bgGain;
 
             try {
