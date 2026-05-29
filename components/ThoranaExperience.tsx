@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { Sparkles } from "lucide-react";
 
-import { AudioControls } from "@/components/AudioControls";
 import { FloatingLanterns } from "@/components/FloatingLanterns";
 import { LightParticles } from "@/components/LightParticles";
 import { MoralSection } from "@/components/MoralSection";
@@ -14,7 +14,6 @@ import { StoryScene } from "@/components/StoryScene";
 import { TaproBranding } from "@/components/TaproBranding";
 import { ThoranaFrame } from "@/components/ThoranaFrame";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { nandivisalaScenes, storyMeta } from "@/data/nandivisalaStory";
 
 import { ThoranaIntro } from "./ThoranaIntro";
@@ -40,6 +39,7 @@ export function ThoranaExperience() {
   const [shareUrl, setShareUrl] = useState(storyMeta.website);
   const backgroundAudioRef = useRef<HTMLAudioElement | null>(null);
   const narrationAudioRef = useRef<HTMLAudioElement | null>(null);
+  const isAutoPlayingRef = useRef(false);
 
   const currentSceneData = nandivisalaScenes[currentScene];
   const totalScenes = nandivisalaScenes.length;
@@ -48,6 +48,47 @@ export function ThoranaExperience() {
   useEffect(() => {
     setShareUrl(window.location.href);
   }, []);
+
+  useEffect(() => {
+    isAutoPlayingRef.current = isAutoPlaying;
+  }, [isAutoPlaying]);
+
+  useEffect(() => {
+    const audio = backgroundAudioRef.current;
+    if (!audio) {
+      return;
+    }
+
+    audio.loop = true;
+    audio.preload = "auto";
+    audio.volume = isStarted ? 0.05 : 0.22;
+
+    void audio.play().catch(() => {
+      // Autoplay may be blocked by the browser; the element stays ready for the first allowed play.
+    });
+
+    return () => {
+      audio.pause();
+      audio.currentTime = 0;
+    };
+  }, [isStarted]);
+
+  useEffect(() => {
+    const audio = backgroundAudioRef.current;
+    if (!audio) {
+      return;
+    }
+
+    if (isMuted) {
+      audio.pause();
+      return;
+    }
+
+    audio.volume = isStarted ? 0.12 : 0.22;
+    void audio.play().catch(() => {
+      // Keep the background track ready if autoplay is blocked.
+    });
+  }, [isMuted, isStarted]);
 
   const stopNarration = () => {
     narrationAudioRef.current?.pause();
@@ -73,38 +114,21 @@ export function ThoranaExperience() {
 
     const audio = new Audio(nandivisalaScenes[sceneIndex].audioSrc);
     audio.preload = "none";
-    audio.volume = 0.82;
+    audio.volume = 0.95;
     audio.onended = () => {
       if (sceneIndex === totalScenes - 1) {
         setShowMoralSection(true);
         setIsAutoPlaying(false);
+        return;
+      }
+
+      if (isAutoPlayingRef.current) {
+        setShowMoralSection(false);
+        setCurrentScene((current) => Math.min(current + 1, totalScenes - 1));
       }
     };
     narrationAudioRef.current = audio;
     safePlayAudio(audio);
-  };
-
-  const stopBackground = () => {
-    backgroundAudioRef.current?.pause();
-    if (backgroundAudioRef.current) {
-      backgroundAudioRef.current.currentTime = 0;
-    }
-  };
-
-  const playBackground = () => {
-    if (isMuted || typeof Audio === "undefined") {
-      return;
-    }
-
-    if (!backgroundAudioRef.current) {
-      const audio = new Audio("/audio/background-vesak.mp3");
-      audio.loop = true;
-      audio.volume = 0.25;
-      audio.preload = "none";
-      backgroundAudioRef.current = audio;
-    }
-
-    safePlayAudio(backgroundAudioRef.current);
   };
 
   const goToScene = (sceneIndex: number) => {
@@ -149,16 +173,22 @@ export function ThoranaExperience() {
 
   useEffect(() => {
     if (!isStarted) {
-      stopBackground();
       stopNarration();
       return;
     }
 
-    if (!isMuted) {
-      playBackground();
-    } else {
-      stopBackground();
+    if (isMuted) {
+      backgroundAudioRef.current?.pause();
+      return;
     }
+
+    if (backgroundAudioRef.current) {
+      backgroundAudioRef.current.volume = isStarted ? 0.05 : 0.22;
+    }
+
+    void backgroundAudioRef.current?.play().catch(() => {
+      // Browser policies may still require a user gesture on some devices.
+    });
   }, [isStarted, isMuted]);
 
   useEffect(() => {
@@ -169,25 +199,6 @@ export function ThoranaExperience() {
     playSceneAudio(currentScene);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentScene, isNarrationEnabled, isMuted, isStarted]);
-
-  useEffect(() => {
-    if (!isStarted || !isAutoPlaying || showMoralSection || reduceMotion) {
-      return;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      setCurrentScene((scene) => {
-        if (scene >= totalScenes - 1) {
-          setIsAutoPlaying(false);
-          setShowMoralSection(true);
-          return scene;
-        }
-        return scene + 1;
-      });
-    }, 9000);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [currentScene, isAutoPlaying, isStarted, reduceMotion, showMoralSection, totalScenes]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -246,6 +257,16 @@ export function ThoranaExperience() {
         <LightParticles />
       </div>
 
+      <audio
+        ref={backgroundAudioRef}
+        src="/audio/background-vesak.mp3"
+        autoPlay
+        loop
+        preload="auto"
+        aria-hidden="true"
+        className="hidden"
+      />
+
       <div className="relative z-10">
         <AnimatePresence mode="wait">
           {!isStarted ? (
@@ -261,7 +282,7 @@ export function ThoranaExperience() {
               transition={{ duration: 0.5 }}
               className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-6 px-4 py-5 md:px-6 md:py-8 lg:px-8"
             >
-              <div className="grid items-start gap-6 lg:grid-cols-[1.4fr_0.6fr]">
+              <div className="space-y-6">
                 <div className="space-y-4">
                   <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.4rem] border border-white/8 bg-white/5 px-4 py-3 backdrop-blur-xl md:px-5">
                     <div>
@@ -291,19 +312,8 @@ export function ThoranaExperience() {
                   />
                 </div>
 
-                <div className="space-y-4 lg:sticky lg:top-6">
-                  <AudioControls
-                    isMuted={isMuted}
-                    isNarrationEnabled={isNarrationEnabled}
-                    onToggleMuted={() => setIsMuted((value) => !value)}
-                    onToggleNarration={() => setIsNarrationEnabled((value) => !value)}
-                  />
-
+                <div className="space-y-4">
                   <ShareButtons shareUrl={shareUrl} shareMessage={storyMeta.shareMessage} />
-
-                  <Card className="border-amber-100/10 bg-white/5 p-4 text-sm leading-7 text-white/76 backdrop-blur-xl">
-                    The scene image, narration, and glowing festival frame are tuned for a calm, respectful Vesak presentation.
-                  </Card>
                 </div>
               </div>
 

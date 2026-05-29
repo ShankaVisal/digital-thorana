@@ -17,6 +17,10 @@ type ThoranaIntroProps = {
 export function ThoranaIntro({ onStart }: ThoranaIntroProps) {
   const reduceMotion = useReducedMotion();
 
+  const handleStart = () => {
+    onStart();
+  };
+
   return (
     <section className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(248,211,122,0.18),_transparent_36%),linear-gradient(180deg,_#06101e_0%,_#120923_100%)]" />
@@ -57,7 +61,7 @@ export function ThoranaIntro({ onStart }: ThoranaIntroProps) {
             </p>
 
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Button variant="gold" size="lg" onClick={onStart} className="min-w-[220px] px-6 text-base">
+              <Button variant="gold" size="lg" onClick={handleStart} className="min-w-[220px] px-6 text-base">
                 Start the Thorana
                 <ArrowRight className="h-4 w-4" />
               </Button>
