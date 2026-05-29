@@ -1,19 +1,12 @@
 import type { StaticImageData } from "next/image";
 
-import n1 from "../n1.png";
-import n2 from "../n2.png";
-import n3 from "../n3.png";
-import n4 from "../n4.png";
-import n5 from "../n5.png";
-import n6 from "../n6.png";
-
 export type StoryScene = {
   sceneNumber: number;
   title: string;
   sinhalaNarration: string;
   englishSummary: string;
   keyMessage: string;
-  image: StaticImageData;
+  image: StaticImageData | string;
   audioSrc: string;
 };
 
@@ -50,7 +43,7 @@ export const nandivisalaScenes: StoryScene[] = [
     englishSummary:
       "A kind Brahmin raised Nandivisala with love and care, treating him like his own child.",
     keyMessage: "Love and kindness build trust.",
-    image: n1,
+    image: "/images/n1.png",
     audioSrc: "/audio/scene-1.mp3",
   },
   {
@@ -61,7 +54,7 @@ export const nandivisalaScenes: StoryScene[] = [
     englishSummary:
       "When Nandivisala grew strong, he wanted to repay the Brahmin’s kindness.",
     keyMessage: "Gratitude is a noble quality.",
-    image: n2,
+    image: "/images/n2.png",
     audioSrc: "/audio/scene-2.mp3",
   },
   {
@@ -72,7 +65,7 @@ export const nandivisalaScenes: StoryScene[] = [
     englishSummary:
       "The Brahmin challenged Nandivisala to pull many heavy carts, but he spoke harshly.",
     keyMessage: "Harsh words can break confidence.",
-    image: n3,
+    image: "/images/n3.png",
     audioSrc: "/audio/scene-3.mp3",
   },
   {
@@ -83,7 +76,7 @@ export const nandivisalaScenes: StoryScene[] = [
     englishSummary:
       "Hurt by the Brahmin’s harsh words, Nandivisala refused to pull the carts, and the Brahmin lost the challenge.",
     keyMessage: "Disrespect can destroy even great strength.",
-    image: n4,
+    image: "/images/n4.png",
     audioSrc: "/audio/scene-4.mp3",
   },
   {
@@ -94,7 +87,7 @@ export const nandivisalaScenes: StoryScene[] = [
     englishSummary:
       "The Brahmin realized his mistake and spoke to Nandivisala with kindness and respect.",
     keyMessage: "Kind words awaken strength.",
-    image: n5,
+    image: "/images/n5.png",
     audioSrc: "/audio/scene-5.mp3",
   },
   {
@@ -105,7 +98,7 @@ export const nandivisalaScenes: StoryScene[] = [
     englishSummary:
       "With kind words and respect, Nandivisala succeeded and brought victory to the Brahmin.",
     keyMessage: "Respect and kindness can achieve what harsh words cannot.",
-    image: n6,
+    image: "/images/n6.png",
     audioSrc: "/audio/scene-6.mp3",
   },
 ];
