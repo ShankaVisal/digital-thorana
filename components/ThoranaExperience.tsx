@@ -217,7 +217,7 @@ export function ThoranaExperience() {
           // ensure background gain exists and is connected
           if (!backgroundGainRef.current) {
             const bgGain = ctx.createGain();
-            bgGain.gain.value = isStarted ? (isMobile ? 0.045 : 0.05) : (isMobile ? 0.14 : 0.22);
+            bgGain.gain.value = isStarted ? (isMobile ? 0.055 : 0.05) : (isMobile ? 0.16 : 0.22);
             bgGain.connect(ctx.destination);
             backgroundGainRef.current = bgGain;
           }
@@ -231,7 +231,7 @@ export function ThoranaExperience() {
 
           // duck background
           try {
-            backgroundGainRef.current.gain.value = isMobile ? 0.022 : 0.02;
+            backgroundGainRef.current.gain.value = isMobile ? 0.03 : 0.02;
           } catch (e) {}
 
           // create an HTMLAudioElement and route it through the AudioContext
@@ -254,7 +254,7 @@ export function ThoranaExperience() {
 
           el.onended = () => {
             try {
-              if (backgroundGainRef.current) backgroundGainRef.current.gain.value = isStarted ? (isMobile ? 0.045 : 0.05) : (isMobile ? 0.14 : 0.22);
+              if (backgroundGainRef.current) backgroundGainRef.current.gain.value = isStarted ? (isMobile ? 0.055 : 0.05) : (isMobile ? 0.16 : 0.22);
             } catch (e) {}
 
             if (sceneIndex === totalScenes - 1) {
@@ -461,7 +461,7 @@ export function ThoranaExperience() {
       // create background gain and play background buffer
       const bgGain = ctx.createGain();
       // set background gain: higher on mobile so it's audible, lowered when started
-      bgGain.gain.value = isStarted ? (isMobile ? 0.12 : 0.05) : 0.22;
+      bgGain.gain.value = isStarted ? (isMobile ? 0.14 : 0.05) : 0.22;
       backgroundGainRef.current = bgGain;
 
       try {
