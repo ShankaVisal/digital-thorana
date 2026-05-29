@@ -49,6 +49,8 @@ export function ThoranaExperience() {
   const [isIOS, setIsIOS] = useState(false);
   const isAutoPlayingRef = useRef(false);
   const [audioDebugEnabled, setAudioDebugEnabled] = useState(false);
+  const [lastAudioError, setLastAudioError] = useState<string | null>(null);
+  const [lastAudioAction, setLastAudioAction] = useState<string | null>(null);
 
   const currentSceneData = nandivisalaScenes[currentScene];
   const totalScenes = nandivisalaScenes.length;
@@ -548,15 +550,22 @@ export function ThoranaExperience() {
               <div>isMobile: {String(isMobile)}</div>
               <div>AudioContext: {audioContextRef.current ? "ready" : "null"}</div>
               <div>BG buffer: {bgSourceRef.current ? "loaded" : "null"}</div>
+              <div>BG gain: {backgroundGainRef.current ? String(backgroundGainRef.current.gain.value) : "-"}</div>
+              <div>Narration src: {narrationSourceRef.current ? "playing" : "null"}</div>
+              <div>Last action: {lastAudioAction ?? "-"}</div>
+              <div className="text-rose-300">Last error: {lastAudioError ?? "-"}</div>
             </div>
             <div className="flex flex-col gap-2">
               <button
                 onClick={async () => {
+                  setLastAudioAction("init-audio-context");
+                  setLastAudioError(null);
                   try {
-                    await ensureAudioContext();
-                    console.log("AudioContext ready", audioContextRef.current);
-                  } catch (e) {
+                    const ctx = await ensureAudioContext();
+                    console.log("AudioContext ready", ctx);
+                  } catch (e: any) {
                     console.error(e);
+                    setLastAudioError(String(e?.message ?? e));
                   }
                 }}
                 className="rounded bg-amber-100/12 px-3 py-1 text-amber-100"
@@ -565,11 +574,17 @@ export function ThoranaExperience() {
               </button>
               <button
                 onClick={async () => {
+                  setLastAudioAction("play-bg-buffer");
+                  setLastAudioError(null);
                   try {
-                    await playBufferUrl("/audio/background-vesak.mp3", true, isMobile ? 0.12 : 0.05);
-                    console.log("Played BG buffer");
-                  } catch (e) {
+                    const res = await playBufferUrl("/audio/background-vesak.mp3", true, isMobile ? 0.12 : 0.05);
+                    // store bg source ref for diagnostics
+                    bgSourceRef.current = res.src;
+                    backgroundGainRef.current = res.gain;
+                    console.log("Played BG buffer", res);
+                  } catch (e: any) {
                     console.error(e);
+                    setLastAudioError(String(e?.message ?? e));
                   }
                 }}
                 className="rounded bg-amber-100/12 px-3 py-1 text-amber-100"
@@ -578,17 +593,41 @@ export function ThoranaExperience() {
               </button>
               <button
                 onClick={async () => {
+                  setLastAudioAction("play-narration-buffer");
+                  setLastAudioError(null);
                   try {
                     const sceneUrl = nandivisalaScenes[currentScene]?.audioSrc ?? "/audio/scene-1.mp3";
-                    await playBufferUrl(sceneUrl, false, 1.0);
-                    console.log("Played narration buffer");
-                  } catch (e) {
+                    const res = await playBufferUrl(sceneUrl, false, 1.0);
+                    narrationSourceRef.current = res.src;
+                    console.log("Played narration buffer", res);
+                  } catch (e: any) {
                     console.error(e);
+                    setLastAudioError(String(e?.message ?? e));
                   }
                 }}
                 className="rounded bg-amber-100/12 px-3 py-1 text-amber-100"
               >
                 Play Narration Buffer
+              </button>
+              <button
+                onClick={async () => {
+                  setLastAudioAction("play-narration-element");
+                  setLastAudioError(null);
+                  try {
+                    const url = nandivisalaScenes[currentScene]?.audioSrc ?? "/audio/scene-1.mp3";
+                    const el = new Audio(url);
+                    el.preload = "auto";
+                    narrationAudioRef.current = el;
+                    await el.play();
+                    console.log("Played narration via element", url);
+                  } catch (e: any) {
+                    console.error(e);
+                    setLastAudioError(String(e?.message ?? e));
+                  }
+                }}
+                className="rounded bg-amber-100/12 px-3 py-1 text-amber-100"
+              >
+                Play Narration Element
               </button>
             </div>
           </div>
