@@ -35,10 +35,12 @@ export function ThoranaExperience() {
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isNarrationEnabled, setIsNarrationEnabled] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   const [showMoralSection, setShowMoralSection] = useState(false);
   const [shareUrl, setShareUrl] = useState(storyMeta.website);
   const backgroundAudioRef = useRef<HTMLAudioElement | null>(null);
   const narrationAudioRef = useRef<HTMLAudioElement | null>(null);
+  const backgroundPrevVolumeRef = useRef<number | null>(null);
   const isAutoPlayingRef = useRef(false);
 
   const currentSceneData = nandivisalaScenes[currentScene];
@@ -47,6 +49,13 @@ export function ThoranaExperience() {
 
   useEffect(() => {
     setShareUrl(window.location.href);
+    if (typeof window !== "undefined") {
+      const uaMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      setIsMobile(window.innerWidth <= 767 || uaMobile);
+      const onResize = () => setIsMobile(window.innerWidth <= 767 || uaMobile);
+      window.addEventListener("resize", onResize);
+      return () => window.removeEventListener("resize", onResize);
+    }
   }, []);
 
   useEffect(() => {
@@ -95,6 +104,15 @@ export function ThoranaExperience() {
     if (narrationAudioRef.current) {
       narrationAudioRef.current.currentTime = 0;
     }
+    // restore background if we ducked it for mobile narration
+    if (isMobile && backgroundPrevVolumeRef.current !== null && backgroundAudioRef.current) {
+      try {
+        backgroundAudioRef.current.volume = backgroundPrevVolumeRef.current;
+      } catch (e) {
+        // ignore
+      }
+      backgroundPrevVolumeRef.current = null;
+    }
   };
 
   const playSceneAudio = (sceneIndex: number) => {
@@ -114,19 +132,58 @@ export function ThoranaExperience() {
 
     const audio = new Audio(nandivisalaScenes[sceneIndex].audioSrc);
     audio.preload = "none";
-    audio.volume = 0.95;
-    audio.onended = () => {
-      if (sceneIndex === totalScenes - 1) {
-        setShowMoralSection(true);
-        setIsAutoPlaying(false);
-        return;
+
+    // On mobile: boost narration and duck background; desktop/tablet behavior unchanged
+    if (isMobile) {
+      // save previous background volume to restore later
+      if (backgroundAudioRef.current) backgroundPrevVolumeRef.current = backgroundAudioRef.current.volume;
+      // set narration to max (element volume) and lower background
+      audio.volume = 1.0;
+      if (backgroundAudioRef.current) {
+        try {
+          backgroundAudioRef.current.volume = isStarted ? 0.02 : 0.08;
+        } catch (e) {
+          // ignore
+        }
       }
 
-      if (isAutoPlayingRef.current) {
-        setShowMoralSection(false);
-        setCurrentScene((current) => Math.min(current + 1, totalScenes - 1));
-      }
-    };
+      audio.onended = () => {
+        // restore background
+        if (backgroundPrevVolumeRef.current !== null && backgroundAudioRef.current) {
+          try {
+            backgroundAudioRef.current.volume = backgroundPrevVolumeRef.current;
+          } catch (e) {}
+          backgroundPrevVolumeRef.current = null;
+        }
+
+        if (sceneIndex === totalScenes - 1) {
+          setShowMoralSection(true);
+          setIsAutoPlaying(false);
+          return;
+        }
+
+        if (isAutoPlayingRef.current) {
+          setShowMoralSection(false);
+          setCurrentScene((current) => Math.min(current + 1, totalScenes - 1));
+        }
+      };
+    } else {
+      // desktop/tablet: keep prior behavior
+      audio.volume = 0.95;
+      audio.onended = () => {
+        if (sceneIndex === totalScenes - 1) {
+          setShowMoralSection(true);
+          setIsAutoPlaying(false);
+          return;
+        }
+
+        if (isAutoPlayingRef.current) {
+          setShowMoralSection(false);
+          setCurrentScene((current) => Math.min(current + 1, totalScenes - 1));
+        }
+      };
+    }
+
     narrationAudioRef.current = audio;
     safePlayAudio(audio);
   };
