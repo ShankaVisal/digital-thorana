@@ -208,48 +208,63 @@ export function ThoranaExperience() {
         narrationSourceRef.current?.stop();
       } catch (e) {}
 
-      const playBuffer = async (url: string) => {
-        let buffer = audioBufferCache.current.get(url);
-        if (!buffer) {
-          const res = await fetch(url);
-          const ab = await res.arrayBuffer();
-          buffer = (await ctx.decodeAudioData(ab.slice(0))) as AudioBuffer;
-          audioBufferCache.current.set(url, buffer);
-        }
+      // Use a media element connected into the AudioContext for narration on iOS.
+      // This reliably routes audio through the same output as the background buffer.
+      const playNarrationViaElement = async (url: string) => {
+        try {
+          // ensure background gain exists and is connected
+          if (!backgroundGainRef.current) {
+            const bgGain = ctx.createGain();
+            bgGain.gain.value = isStarted ? (isMobile ? 0.03 : 0.05) : (isMobile ? 0.12 : 0.22);
+            bgGain.connect(ctx.destination);
+            backgroundGainRef.current = bgGain;
+          }
 
-        const src = ctx.createBufferSource();
-        src.buffer = buffer;
-        const gain = ctx.createGain();
-        gain.gain.value = isMobile ? 1.0 : 0.95;
-        src.connect(gain).connect(backgroundGainRef.current ?? ctx.destination);
-        src.start();
-        narrationSourceRef.current = src;
-
-        src.onended = () => {
-          // restore background gain
+          // duck background
           try {
-            if (backgroundGainRef.current) backgroundGainRef.current.gain.value = isStarted ? (isMobile ? 0.03 : 0.05) : (isMobile ? 0.12 : 0.22);
+            backgroundGainRef.current.gain.value = isMobile ? 0.02 : 0.02;
           } catch (e) {}
 
-          if (sceneIndex === totalScenes - 1) {
-            setShowMoralSection(true);
-            setIsAutoPlaying(false);
-            return;
+          // create an HTMLAudioElement and route it through the AudioContext
+          const el = new Audio(url);
+          el.preload = "auto";
+          el.crossOrigin = "anonymous";
+          (el as any).playsInline = true;
+
+          // create media source and connect to background gain (so it shares routing)
+          try {
+            const mediaSrc = ctx.createMediaElementSource(el);
+            mediaSrc.connect(backgroundGainRef.current ?? ctx.destination);
+          } catch (e) {
+            // Some browsers restrict createMediaElementSource; fall back to direct connect
+            // (the element will still play through system output)
           }
 
-          if (isAutoPlayingRef.current) {
-            setShowMoralSection(false);
-            setCurrentScene((current) => Math.min(current + 1, totalScenes - 1));
-          }
-        };
+          narrationAudioRef.current = el;
+          await el.play();
+
+          el.onended = () => {
+            try {
+              if (backgroundGainRef.current) backgroundGainRef.current.gain.value = isStarted ? (isMobile ? 0.03 : 0.05) : (isMobile ? 0.12 : 0.22);
+            } catch (e) {}
+
+            if (sceneIndex === totalScenes - 1) {
+              setShowMoralSection(true);
+              setIsAutoPlaying(false);
+              return;
+            }
+
+            if (isAutoPlayingRef.current) {
+              setShowMoralSection(false);
+              setCurrentScene((current) => Math.min(current + 1, totalScenes - 1));
+            }
+          };
+        } catch (e) {
+          // fallback: nothing we can do here other than ignore
+        }
       };
 
-      // duck background before playing narration
-      try {
-        if (backgroundGainRef.current) backgroundGainRef.current.gain.value = isMobile ? 0.02 : 0.02;
-      } catch (e) {}
-
-      void playBuffer(srcUrl).catch(() => {});
+      void playNarrationViaElement(srcUrl).catch(() => {});
       return;
     }
 
